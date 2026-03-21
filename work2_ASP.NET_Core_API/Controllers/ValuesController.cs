@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
+using System.Text;
 using work2_ASP.NET_Core_API.Models;
 
 namespace work2_ASP.NET_Core_API.Controllers;
@@ -129,5 +131,83 @@ public class ValuesController : ControllerBase
 
         Response.Cookies.Delete("session_token");
         return Ok(new { message = "Выход выполнен" });
+    }
+
+
+    // Секретный ключ для подписи (из конфигурации)
+    private string SecretKey => _configuration["SecretKey"] ?? throw new InvalidOperationException("SecretKey not configured");
+
+    private readonly IConfiguration _configuration;
+
+    public ValuesController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
+    private string ComputeSignature(string data)
+    {
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(SecretKey));
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
+        // Преобразование в base64url
+        return Convert.ToBase64String(hash).Replace("/", "_").Replace("+", "-").TrimEnd('=');
+    }
+
+    private bool VerifySignature(string data, string signature)
+    {
+        var computed = ComputeSignature(data);
+        return computed == signature;
+    }
+
+    [HttpPost("login_signed")]
+    public IActionResult LoginSigned([FromBody] LoginRequest request)
+    {
+        if (_validUsers.TryGetValue(request.Username, out var validPassword)
+            && validPassword == request.Password)
+        {
+            var userId = Guid.NewGuid().ToString(); // уникальный идентификатор пользователя
+            var signature = ComputeSignature(userId);
+            var sessionToken = $"{userId}.{signature}";
+
+            Response.Cookies.Append("session_token", sessionToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                MaxAge = TimeSpan.FromMinutes(5)
+            });
+
+            return Ok(new { message = "Успешный вход (с подписью)" });
+        }
+
+        return Unauthorized(new { message = "Неверные учетные данные" });
+    }
+
+    [HttpGet("profile")]
+    public IActionResult GetProfile()
+    {
+        if (!Request.Cookies.TryGetValue("session_token", out var token))
+        {
+            return Unauthorized(new { message = "Неавторизован" });
+        }
+
+        var parts = token.Split('.');
+        if (parts.Length != 2)
+        {
+            return Unauthorized(new { message = "Недействительный сеанс" });
+        }
+
+        var userId = parts[0];
+        var signature = parts[1];
+
+        if (!VerifySignature(userId, signature))
+        {
+            return Unauthorized(new { message = "Недействительный сеанс" });
+        }
+
+        return Ok(new
+        {
+            user_id = userId,
+            username = "user",
+            email = "user@example.com"
+        });
     }
 }
