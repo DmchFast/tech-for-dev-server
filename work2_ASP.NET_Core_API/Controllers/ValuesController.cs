@@ -305,4 +305,37 @@ public class ValuesController : ControllerBase
             email = "user@example.com"
         });
     }
+
+
+    [HttpGet("headers")]
+    public IActionResult GetHeaders([FromHeader] CommonHeaders headers)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        return Ok(new
+        {
+            User_Agent = headers.UserAgent,
+            Accept_Language = headers.AcceptLanguage
+        });
+    }
+
+    [HttpGet("info")]
+    public IActionResult GetInfo([FromHeader] CommonHeaders headers)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        Response.Headers.Append("X-Server-Time", DateTime.UtcNow.ToString("o"));
+
+        return Ok(new
+        {
+            message = "Заголовки успешно обработаны.",
+            headers = new
+            {
+                User_Agent = headers.UserAgent,
+                Accept_Language = headers.AcceptLanguage
+            }
+        });
+    }
 }
