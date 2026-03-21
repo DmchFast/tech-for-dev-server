@@ -210,4 +210,99 @@ public class ValuesController : ControllerBase
             email = "user@example.com"
         });
     }
+
+    private string CreateSessionToken(string userId, long timestamp)
+    {
+        var data = $"{userId}.{timestamp}";
+        var signature = ComputeSignature(data);
+        return $"{data}.{signature}";
+    }
+
+    private (string userId, long timestamp, bool valid) ValidateSessionToken(string token)
+    {
+        var parts = token.Split('.');
+        if (parts.Length != 3) return (null!, 0, false);
+
+        var userId = parts[0];
+        var timestampStr = parts[1];
+        var signature = parts[2];
+
+        if (!long.TryParse(timestampStr, out var timestamp))
+            return (null!, 0, false);
+
+        var data = $"{userId}.{timestamp}";
+        if (!VerifySignature(data, signature))
+            return (null!, 0, false);
+
+        return (userId, timestamp, true);
+    }
+
+    [HttpPost("login_extended")]
+    public IActionResult LoginExtended([FromBody] LoginRequest request)
+    {
+        if (_validUsers.TryGetValue(request.Username, out var validPassword)
+            && validPassword == request.Password)
+        {
+            var userId = Guid.NewGuid().ToString();
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var sessionToken = CreateSessionToken(userId, timestamp);
+
+            Response.Cookies.Append("session_token", sessionToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                MaxAge = TimeSpan.FromMinutes(5)
+            });
+
+            return Ok(new { message = "Успешный вход (с продлением)" });
+        }
+
+        return Unauthorized(new { message = "Неверные учетные данные" });
+    }
+
+    [HttpGet("profile_extended")]
+    public IActionResult GetProfileExtended()
+    {
+        if (!Request.Cookies.TryGetValue("session_token", out var token))
+        {
+            return Unauthorized(new { message = "Неавторизован" });
+        }
+
+        var (userId, timestamp, valid) = ValidateSessionToken(token);
+        if (!valid)
+        {
+            return Unauthorized(new { message = "Недействительный сеанс" });
+        }
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var diffSeconds = now - timestamp;
+
+        // Сессия истекла (5 минут)
+        if (diffSeconds > 300)
+        {
+            Response.Cookies.Delete("session_token");
+            return Unauthorized(new { message = "Сеанс истек" });
+        }
+
+        // Обновление
+        bool shouldRefresh = diffSeconds >= 180 && diffSeconds <= 300;
+
+        if (shouldRefresh)
+        {
+            var newToken = CreateSessionToken(userId, now);
+            Response.Cookies.Append("session_token", newToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                MaxAge = TimeSpan.FromMinutes(5)
+            });
+        }
+
+        return Ok(new
+        {
+            user_id = userId,
+            username = "user",
+            email = "user@example.com"
+        });
+    }
 }
