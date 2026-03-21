@@ -59,4 +59,75 @@ public class ValuesController : ControllerBase
         var results = query.Take(limit).ToList();
         return Ok(results);
     }
+
+    // Пользователь
+    private static readonly Dictionary<string, string> _validUsers = new()
+    {
+        { "user", "12345" }
+    };
+
+    private static readonly Dictionary<string, string> _sessions = new();
+
+    [HttpPost("login")]
+    public IActionResult Login([FromBody] LoginRequest request)
+    {
+        if (_validUsers.TryGetValue(request.Username, out var validPassword)
+            && validPassword == request.Password)
+        {
+            // Создание токен
+            var sessionToken = Guid.NewGuid().ToString();
+
+            _sessions[sessionToken] = request.Username;
+
+            // cookie
+            Response.Cookies.Append("session_token", sessionToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                MaxAge = TimeSpan.FromMinutes(30)
+            });
+
+            return Ok(new { message = "Успешный вход" });
+        }
+
+        return Unauthorized(new { message = "Неверные учетные данные" });
+    }
+
+    [HttpGet("user")]
+    public IActionResult GetUserProfile()
+    {
+        // Наличие cookie
+        if (!Request.Cookies.TryGetValue("session_token", out var sessionToken))
+        {
+            return Unauthorized(new { message = "Неавторизован" });
+        }
+
+        // Валидность токена
+        if (!_sessions.TryGetValue(sessionToken, out var username))
+        {
+            return Unauthorized(new { message = "Неавторизован" });
+        }
+
+        return Ok(new
+        {
+            username = username,
+            profile = new
+            {
+                name = username,
+                email = $"{username}@example.com"
+            }
+        });
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        if (Request.Cookies.TryGetValue("session_token", out var sessionToken))
+        {
+            _sessions.Remove(sessionToken);
+        }
+
+        Response.Cookies.Delete("session_token");
+        return Ok(new { message = "Выход выполнен" });
+    }
 }
