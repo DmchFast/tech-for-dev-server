@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="work1_ASP.NET_Core_API/work1_ASP.NET_Core_API.csproj" />
   <Project Path="work2_ASP.NET_Core_API/work2_ASP.NET_Core_API.csproj" Id="81c14548-cf37-4c37-9556-f4c06e6a342f" />
+  <Project Path="work3_ASP.NET_Core_API/work3_ASP.NET_Core_API.csproj" Id="939158af-5604-4b81-84da-782d90a9b92c" />
 </Solution>
