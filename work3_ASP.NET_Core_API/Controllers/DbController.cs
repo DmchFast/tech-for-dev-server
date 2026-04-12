@@ -71,4 +71,31 @@ public class DbController : ControllerBase
         if (todo == null) return NotFound();
         return Ok(todo);
     }
+
+    // PUT /db/todos/{id}
+    [HttpPut("todos/{id}")]
+    public async Task<IActionResult> UpdateTodo(int id, [FromBody] TodoUpdateDto dto)
+    {
+        var todo = await _context.Todos.FindAsync(id);
+        if (todo == null) return NotFound();
+
+        todo.Title = dto.Title;
+        todo.Description = dto.Description;
+        todo.Completed = dto.Completed;
+
+        await _context.SaveChangesAsync();
+        return Ok(todo);
+    }
+
+    // DELETE /db/todos/{id}
+    [HttpDelete("todos/{id}")]
+    public async Task<IActionResult> DeleteTodo(int id)
+    {
+        var todo = await _context.Todos.FindAsync(id);
+        if (todo == null) return NotFound();
+
+        _context.Todos.Remove(todo);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Todo deleted" });
+    }
 }
