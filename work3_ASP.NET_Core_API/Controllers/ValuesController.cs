@@ -2,11 +2,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 using work3_ASP.NET_Core_API.Models;
 using work3_ASP.NET_Core_API.Services;
 using BCryptNet = BCrypt.Net.BCrypt;
+using System.Security.Cryptography;
 
 namespace work3_ASP.NET_Core_API.Controllers;
 
@@ -37,7 +39,7 @@ public class ValuesController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] UserLoginDto dto)
     {
-        if (!_userRepo.TryGet(dto.Username, out var hashed))
+        if (!_userRepo.TryGetTimingSafe(dto.Username, out var hashed))
             return NotFound(new { detail = "User not found" });
 
         bool valid = BCryptNet.Verify(dto.Password, hashed);

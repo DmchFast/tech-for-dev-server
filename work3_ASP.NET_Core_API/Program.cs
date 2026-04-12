@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using AspNetCoreRateLimit;
 
 using work3_ASP.NET_Core_API.Services;
 
@@ -17,6 +18,31 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();            // Swagger
 
 builder.Services.AddSingleton<UserMemoryRepository>();
+
+// Rate Limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(options =>
+{
+    options.GeneralRules = new List<RateLimitRule>
+    {
+        new RateLimitRule
+        {
+            Endpoint = "POST:/register",
+            Period = "1m",
+            Limit = 1
+        },
+        new RateLimitRule
+        {
+            Endpoint = "POST:/login",
+            Period = "1m",
+            Limit = 5
+        }
+    };
+    options.EnableEndpointRateLimiting = true;
+    options.StackBlockedRequests = false;
+});
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -133,6 +159,7 @@ else if (mode == "PROD")
 
 app.UseHttpsRedirection();
 
+app.UseIpRateLimiting();
 app.UseAuthentication();
 app.UseAuthorization();
 
