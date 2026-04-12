@@ -45,4 +45,30 @@ public class DbController : ControllerBase
         var users = await _context.Users.Select(u => new { u.Id, u.Username, u.Role }).ToListAsync();
         return Ok(users);
     }
+
+    // CRUD для Todo
+
+    // POST /db/todos
+    [HttpPost("todos")]
+    public async Task<IActionResult> CreateTodo([FromBody] TodoCreateDto dto)
+    {
+        var todo = new Todo
+        {
+            Title = dto.Title,
+            Description = dto.Description,
+            Completed = false
+        };
+        _context.Todos.Add(todo);
+        await _context.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetTodo), new { id = todo.Id }, todo);
+    }
+
+    // GET /db/todos/{id}
+    [HttpGet("todos/{id}")]
+    public async Task<IActionResult> GetTodo(int id)
+    {
+        var todo = await _context.Todos.FindAsync(id);
+        if (todo == null) return NotFound();
+        return Ok(todo);
+    }
 }
