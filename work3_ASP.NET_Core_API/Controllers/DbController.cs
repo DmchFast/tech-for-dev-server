@@ -1,0 +1,48 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using work3_ASP.NET_Core_API.Data;
+using work3_ASP.NET_Core_API.Models;
+using BCryptNet = BCrypt.Net.BCrypt;
+
+namespace work3_ASP.NET_Core_API.Controllers;
+
+
+[Route("db/")]
+[ApiController]
+public class DbController : ControllerBase
+{
+    private readonly AppDbContext _context;
+
+    public DbController(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    // POST /db/register
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] UserRegisterDto dto)
+    {
+        if (await _context.Users.AnyAsync(u => u.Username == dto.Username))
+            return Conflict(new { detail = "User already exists" });
+
+        var user = new User
+        {
+            Username = dto.Username,
+            HashedPassword = BCryptNet.HashPassword(dto.Password),
+            Role = dto.Role == "admin" ? "admin" : (dto.Role == "user" ? "user" : "guest")
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "User registered successfully!" });
+    }
+
+    // GET /db/users
+    [HttpGet("users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _context.Users.Select(u => new { u.Id, u.Username, u.Role }).ToListAsync();
+        return Ok(users);
+    }
+}
