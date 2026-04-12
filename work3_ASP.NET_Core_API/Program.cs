@@ -1,3 +1,5 @@
+using work3_ASP.NET_Core_API.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -8,6 +10,10 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();            // Swagger
+
+
+builder.Services.AddControllers();
+builder.Services.AddSingleton<UserMemoryRepository>();
 
 var app = builder.Build();
 

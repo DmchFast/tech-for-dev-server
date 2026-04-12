@@ -1,1 +1,17 @@
-﻿
+﻿POST http://localhost:5161/register
+Content-Type: application/json
+
+{
+  "username": "Dmc",
+  "password": "123"
+}
+
+###
+
+POST http://localhost:5161/login
+Content-Type: application/json
+
+{
+  "username": "Dmc",
+  "password": "123"
+}
