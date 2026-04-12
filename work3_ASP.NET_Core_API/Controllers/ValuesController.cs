@@ -2,13 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 using work3_ASP.NET_Core_API.Models;
 using work3_ASP.NET_Core_API.Services;
 using BCryptNet = BCrypt.Net.BCrypt;
-using System.Security.Cryptography;
 
 namespace work3_ASP.NET_Core_API.Controllers;
 
@@ -31,26 +29,29 @@ public class ValuesController : ControllerBase
         if (_userRepo.Exists(dto.Username))
             return Conflict(new { detail = "User already exists" });
 
+        // Разрешение только guest или user (admin нельзя зарегистрировать через API)
+        string role = (dto.Role == "user") ? "user" : "guest";
+
         var hashed = BCryptNet.HashPassword(dto.Password);
-        _userRepo.TryAdd(dto.Username, hashed);
-        return Ok(new { message = "New user created" });
+        _userRepo.TryAdd(dto.Username, hashed, role);
+        return Ok(new { message = "New user created", role = role });
     }
 
     [HttpPost("login")]
     public IActionResult Login([FromBody] UserLoginDto dto)
     {
-        if (!_userRepo.TryGetTimingSafe(dto.Username, out var hashed))
+        if (!_userRepo.TryGetTimingSafe(dto.Username, out var hashed, out var role))
             return NotFound(new { detail = "User not found" });
 
         bool valid = BCryptNet.Verify(dto.Password, hashed);
         if (!valid)
             return Unauthorized(new { detail = "Authorization failed" });
 
-        var token = GenerateJwtToken(dto.Username);
+        var token = GenerateJwtToken(dto.Username, role!);
         return Ok(new { access_token = token, token_type = "bearer" });
     }
 
-    private string GenerateJwtToken(string username)
+    private string GenerateJwtToken(string username, string role)
     {
         var jwtSettings = _config.GetSection("JwtSettings");
         var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
@@ -60,7 +61,8 @@ public class ValuesController : ControllerBase
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.Name, username)
+            new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.Role, role)   // роль в токен
         };
 
         var key = new SymmetricSecurityKey(secretKey);
@@ -77,11 +79,21 @@ public class ValuesController : ControllerBase
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    [Authorize]
+    // Защищённый ресурс (доступ для admin и user)
+    [Authorize(Roles = "admin,user")]
     [HttpGet("resource")]
     public IActionResult GetProtectedResource()
     {
         var username = User.Identity?.Name;
-        return Ok(new { message = $"Access granted to {username}" });
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        return Ok(new { message = $"Access granted to {username} with role {role}" });
+    }
+
+    // Admin (только для admin)
+    [Authorize(Roles = "admin")]
+    [HttpGet("admin-only")]
+    public IActionResult AdminOnly()
+    {
+        return Ok(new { message = "Welcome, admin! You have full access." });
     }
 }

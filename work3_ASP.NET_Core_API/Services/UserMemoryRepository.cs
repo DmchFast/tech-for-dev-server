@@ -6,16 +6,32 @@ namespace work3_ASP.NET_Core_API.Services;
 
 public class UserMemoryRepository
 {
-    private readonly ConcurrentDictionary<string, string> _users = new(); // username -> hashedPassword
+    // hashedPassword, role
+    private readonly ConcurrentDictionary<string, (string HashedPassword, string Role)> _users = new();
 
-    public bool TryAdd(string username, string hashedPassword) => _users.TryAdd(username, hashedPassword);
-    public bool TryGet(string username, out string? hashedPassword) => _users.TryGetValue(username, out hashedPassword);
+    public bool TryAdd(string username, string hashedPassword, string role = "guest")
+    {
+        return _users.TryAdd(username, (hashedPassword, role));
+    }
+
+    public bool TryGet(string username, out string? hashedPassword, out string? role)
+    {
+        if (_users.TryGetValue(username, out var tuple))
+        {
+            hashedPassword = tuple.HashedPassword;
+            role = tuple.Role;
+            return true;
+        }
+        hashedPassword = null;
+        role = null;
+        return false;
+    }
 
     public bool Exists(string username) => _users.ContainsKey(username);
 
-    public bool TryGetTimingSafe(string username, out string? hashedPassword)
+    // Тайминг-безопасный поиск (для логина)
+    public bool TryGetTimingSafe(string username, out string? hashedPassword, out string? role)
     {
-        // Перебор всех ключей, сравнивая каждый с искомым именем
         foreach (var kvp in _users)
         {
             bool match = CryptographicOperations.FixedTimeEquals(
@@ -24,11 +40,13 @@ public class UserMemoryRepository
             );
             if (match)
             {
-                hashedPassword = kvp.Value;
+                hashedPassword = kvp.Value.HashedPassword;
+                role = kvp.Value.Role;
                 return true;
             }
         }
         hashedPassword = null;
+        role = null;
         return false;
     }
 }
