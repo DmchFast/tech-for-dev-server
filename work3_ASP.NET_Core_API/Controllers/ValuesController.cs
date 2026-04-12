@@ -1,4 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using work3_ASP.NET_Core_API.Models;
 using work3_ASP.NET_Core_API.Services;
 using BCryptNet = BCrypt.Net.BCrypt;
@@ -10,10 +15,12 @@ namespace work3_ASP.NET_Core_API.Controllers;
 public class ValuesController : ControllerBase
 {
     private readonly UserMemoryRepository _userRepo;
+    private readonly IConfiguration _config;
 
-    public ValuesController(UserMemoryRepository userRepo)
+    public ValuesController(UserMemoryRepository userRepo, IConfiguration config)
     {
         _userRepo = userRepo;
+        _config = config;
     }
 
     [HttpPost("register")]
@@ -37,6 +44,42 @@ public class ValuesController : ControllerBase
         if (!valid)
             return Unauthorized(new { detail = "Authorization failed" });
 
-        return Ok(new { message = $"Welcome, {dto.Username}!" });
+        var token = GenerateJwtToken(dto.Username);
+        return Ok(new { access_token = token, token_type = "bearer" });
+    }
+
+    private string GenerateJwtToken(string username)
+    {
+        var jwtSettings = _config.GetSection("JwtSettings");
+        var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
+        var issuer = jwtSettings["Issuer"];
+        var audience = jwtSettings["Audience"];
+        var expiryMinutes = double.Parse(jwtSettings["ExpiryMinutes"]!);
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, username)
+        };
+
+        var key = new SymmetricSecurityKey(secretKey);
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    [Authorize]
+    [HttpGet("resource")]
+    public IActionResult GetProtectedResource()
+    {
+        var username = User.Identity?.Name;
+        return Ok(new { message = $"Access granted to {username}" });
     }
 }
