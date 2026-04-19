@@ -1,0 +1,29 @@
+info:
+  name: Регистрация в бд
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/db/register"
+  body:
+    type: json
+    data: |-
+      {
+        "username": "admin",
+        "password": "admin",
+        "role": "admin"
+        
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: baseUrl
+      value: http://localhost:5161
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

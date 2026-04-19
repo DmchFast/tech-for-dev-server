@@ -1,0 +1,27 @@
+info:
+  name: Регистрация с открытым паролем
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/db/register-plain"
+  body:
+    type: json
+    data: |-
+      {
+        "username": "Dd_plain",
+        "password": "123"
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: baseUrl
+      value: http://localhost:5161
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

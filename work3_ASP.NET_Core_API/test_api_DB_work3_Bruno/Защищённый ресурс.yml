@@ -1,0 +1,25 @@
+info:
+  name: Защищённый ресурс
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/resource"
+  headers:
+    - name: Authorization
+      value: Bearer  {{jwtToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: baseUrl
+      value: http://localhost:5161
+    - name: jwtToken
+      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiREQiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJndWVzdCIsImV4cCI6MTc3NjU4NTQzMywiaXNzIjoiTXlBcHAiLCJhdWQiOiJNeUFwcENsaWVudCJ9.zbfiLzO26lap3_RPVPWioRuWGmD9eSEbFcjeMCgqD1E
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

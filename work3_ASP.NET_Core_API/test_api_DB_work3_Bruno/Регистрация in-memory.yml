@@ -1,0 +1,36 @@
+info:
+  name: Регистрация in-memory
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/register"
+  body:
+    type: json
+    data: |-
+      {
+        "username": "DD",
+        "password": "123"
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: baseUrl
+      value: http://localhost:5161
+  scripts:
+    - type: tests
+      code: |-
+        const response = res.getBody();
+        if (res.getStatus() === 201) {
+          console.log("Регистрация успешна");
+        } else {
+          console.log("Ошибка: " + res.getStatus());
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

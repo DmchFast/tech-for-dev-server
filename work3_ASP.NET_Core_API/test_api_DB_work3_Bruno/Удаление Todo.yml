@@ -1,0 +1,25 @@
+info:
+  name: Удаление Todo
+  type: http
+  seq: 11
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/db/todos/4"
+  headers:
+    - name: Authorization
+      value: Bearer {{pgJwtToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: baseUrl
+      value: http://localhost:5161
+    - name: pgJwtToken
+      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiZGkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJ1c2VyIiwiZXhwIjoxNzc2NTg3NjEwLCJpc3MiOiJNeUFwcCIsImF1ZCI6Ik15QXBwQ2xpZW50In0.OTuPuOZfshpXZX1aaQVu4fgi8pf4--8WVsvTp_BNnAw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
