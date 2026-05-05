@@ -1,0 +1,24 @@
+info:
+  name: valid
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: https://localhost:7203/api/validation/user
+  body:
+    type: json
+    data: |-
+      {
+        "username": "",
+        "age": 10,
+        "email": "bad",
+        "password": "short"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

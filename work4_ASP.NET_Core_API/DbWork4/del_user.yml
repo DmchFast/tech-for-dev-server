@@ -1,0 +1,18 @@
+info:
+  name: del_user
+  type: http
+  seq: 7
+
+http:
+  method: DELETE
+  url: https://localhost:7203/api/users/1
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

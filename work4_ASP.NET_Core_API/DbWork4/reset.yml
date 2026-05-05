@@ -1,0 +1,15 @@
+info:
+  name: reset
+  type: http
+  seq: 8
+
+http:
+  method: DELETE
+  url: https://localhost:7203/api/users/reset
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
