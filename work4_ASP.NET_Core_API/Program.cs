@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using work4_ASP.NET_Core_API.Data;
+using work4_ASP.NET_Core_API.Middleware;
 using work4_ASP.NET_Core_API.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,6 +47,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapControllers();
 
