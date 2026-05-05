@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using work4_ASP.NET_Core_API.Data;
 using work4_ASP.NET_Core_API.Middleware;
@@ -13,6 +14,29 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();            // Swagger
+
+// Настройка валидации
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(e => e.Value?.Errors.Count > 0)
+            .ToDictionary(
+                k => k.Key,
+                v => v.Value!.Errors.Select(x => x.ErrorMessage).ToArray()
+            );
+
+        var problem = new
+        {
+            StatusCode = 400,
+            Message = "Validation failed",
+            Errors = errors
+        };
+        return new BadRequestObjectResult(problem);
+    };
+});
+
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
