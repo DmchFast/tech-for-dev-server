@@ -1,0 +1,809 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+appsettings.Development.json
+appsettings.json
+ASP.NET_Core/.gitignore
+ASP.NET_Core/Feedback.yml
+ASP.NET_Core/Feedbacks.yml
+ASP.NET_Core/opencollection.yml
+ASP.NET_Core/Sum.yml
+ASP.NET_Core/User.yml
+Controllers/ValuesController.cs
+Dependencies/AuthHelper.cs
+Endpoints/AdminEndpoints.cs
+Endpoints/HealthEndpoints.cs
+Endpoints/TaskEndpoints.cs
+Endpoints/UserEndpoints.cs
+Endpoints/WebSocketEndpoints.cs
+folder.yml
+Models/Enums.cs
+Models/TaskItem.cs
+Models/User.cs
+Program.cs
+Properties/launchSettings.json
+Services/InMemoryTaskStorage.cs
+Services/IRoomManager.cs
+Services/ITaskStorage.cs
+Services/RoomManager.cs
+WebApplication_ASP.NET_Core.http
+work5_ASP.NET_Core_API.csproj
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="appsettings.Development.json">
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
+</file>
+
+<file path="appsettings.json">
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
+</file>
+
+<file path="ASP.NET_Core/.gitignore">
+# Secrets
+.env*
+
+# Dependencies
+node_modules
+
+# OS files
+.DS_Store
+Thumbs.db
+</file>
+
+<file path="ASP.NET_Core/Feedback.yml">
+info:
+  name: Feedback
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: https://localhost:7203/feedback
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+</file>
+
+<file path="ASP.NET_Core/Feedbacks.yml">
+info:
+  name: Feedbacks
+  type: http
+  seq: 7
+
+http:
+  method: GET
+  url: "https://localhost:7203/feedbacks "
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+</file>
+
+<file path="ASP.NET_Core/opencollection.yml">
+opencollection: 1.0.0
+
+info:
+  name: ASP.NET_Core
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
+</file>
+
+<file path="ASP.NET_Core/Sum.yml">
+info:
+  name: Sum
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: https://localhost:7203/calculate
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+</file>
+
+<file path="ASP.NET_Core/User.yml">
+info:
+  name: User
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: https://localhost:7203/user
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+</file>
+
+<file path="Controllers/ValuesController.cs">
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace work5_ASP.NET_Core_API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ValuesController : ControllerBase
+    {
+    }
+}
+</file>
+
+<file path="Dependencies/AuthHelper.cs">
+using Microsoft.AspNetCore.Http;
+using work5_ASP.NET_Core_API.Models;
+
+namespace work5_ASP.NET_Core_API.Dependencies;
+
+public static class AuthHelper
+{
+    public static User? GetCurrentUser(HttpContext httpContext)
+    {
+        if (!httpContext.Request.Headers.TryGetValue("X-User-Id", out var userIdStr))
+            return null;
+
+        if (!int.TryParse(userIdStr, out var userId))
+            return null;
+
+        var role = httpContext.Request.Headers["X-User-Role"].FirstOrDefault() ?? UserRoles.User;
+        return new User { Id = userId, Role = role };
+    }
+
+    public static bool IsAdmin(User user) => user?.Role == UserRoles.Admin;
+}
+</file>
+
+<file path="Endpoints/AdminEndpoints.cs">
+using Microsoft.AspNetCore.Http;
+using work5_ASP.NET_Core_API.Dependencies;
+using work5_ASP.NET_Core_API.Services;
+
+namespace work5_ASP.NET_Core_API.Endpoints;
+
+public static class AdminEndpoints
+{
+    public static void MapAdminEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/admin")
+            .WithTags("admin")
+            .AddEndpointFilter(async (context, next) =>
+            {
+                var user = AuthHelper.GetCurrentUser(context.HttpContext);
+                if (user == null)
+                    return Results.Unauthorized();
+                if (!AuthHelper.IsAdmin(user))
+                    return Results.StatusCode(403); // вместо Forbid()
+                context.HttpContext.Items["User"] = user;
+                return await next(context);
+            });
+
+        group.MapGet("/stats", (ITaskStorage storage) =>
+        {
+            var tasks = storage.GetAllTasks();
+            var stats = new
+            {
+                total_tasks = tasks.Count(),
+                by_status = tasks.GroupBy(t => t.Status)
+                    .ToDictionary(g => g.Key, g => g.Count())
+            };
+            return Results.Ok(stats);
+        });
+
+        group.MapDelete("/tasks/{id:int}", async (int id, ITaskStorage storage) =>
+        {
+            var task = storage.GetTaskById(id);
+            if (task == null)
+                return Results.NotFound();
+            storage.DeleteTask(id);
+            return Results.NoContent();
+        });
+    }
+}
+</file>
+
+<file path="Endpoints/HealthEndpoints.cs">
+namespace work5_ASP.NET_Core_API.Endpoints;
+
+public static class HealthEndpoints
+{
+    public static void MapHealthEndpoints(this IEndpointRouteBuilder app)
+    {
+        app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
+           .WithTags("health");
+    }
+}
+</file>
+
+<file path="Endpoints/TaskEndpoints.cs">
+using Microsoft.AspNetCore.Http;
+using work5_ASP.NET_Core_API.Dependencies;
+using work5_ASP.NET_Core_API.Models;
+using work5_ASP.NET_Core_API.Services;
+
+namespace work5_ASP.NET_Core_API.Endpoints;
+
+public static class TaskEndpoints
+{
+    public static void MapTaskEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/tasks")
+            .WithTags("tasks")
+            .AddEndpointFilter(async (context, next) =>
+            {
+                var httpContext = context.HttpContext;
+                var user = AuthHelper.GetCurrentUser(httpContext);
+                if (user == null)
+                    return Results.Unauthorized();
+                context.HttpContext.Items["User"] = user;
+                return await next(context);
+            });
+
+        // POST /tasks
+        group.MapPost("/", async (TaskCreateRequest request, ITaskStorage storage, HttpContext httpContext) =>
+        {
+            var user = (User)httpContext.Items["User"]!;
+
+            if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Length < 3 || request.Title.Length > 80)
+                return Results.UnprocessableEntity("Title must be between 3 and 80 characters");
+
+            if (request.Status != null && !new[] { "todo", "in_progress", "done" }.Contains(request.Status))
+                return Results.BadRequest("Invalid status");
+
+            if (request.Priority < 1 || request.Priority > 5)
+                return Results.BadRequest("Priority must be between 1 and 5");
+
+            var task = new TaskItem
+            {
+                Title = request.Title,
+                Description = request.Description,
+                Status = request.Status ?? "todo",
+                Priority = request.Priority ?? 1,
+                OwnerId = user.Id
+            };
+            var created = storage.CreateTask(task);
+            return Results.Created($"/tasks/{created.Id}", created);
+        });
+
+        // GET /tasks
+        group.MapGet("/", async (ITaskStorage storage, HttpContext httpContext,
+            string? status, int? minPriority) =>
+        {
+            var user = (User)httpContext.Items["User"]!;
+            var tasks = storage.GetAllTasks()
+                .Where(t => t.OwnerId == user.Id);
+
+            if (!string.IsNullOrEmpty(status))
+                tasks = tasks.Where(t => t.Status == status);
+            if (minPriority.HasValue)
+                tasks = tasks.Where(t => t.Priority >= minPriority.Value);
+
+            return Results.Ok(tasks);
+        });
+
+        // GET /tasks/{id}
+        group.MapGet("/{id:int}", async (int id, ITaskStorage storage, HttpContext httpContext) =>
+        {
+            var user = (User)httpContext.Items["User"]!;
+            var task = storage.GetTaskById(id);
+            if (task == null || task.OwnerId != user.Id)
+                return Results.NotFound();
+            return Results.Ok(task);
+        });
+
+        // PATCH /tasks/{id}/status
+        group.MapPatch("/{id:int}/status", async (int id, StatusUpdateRequest request, ITaskStorage storage, HttpContext httpContext) =>
+        {
+            var user = (User)httpContext.Items["User"]!;
+            var task = storage.GetTaskById(id);
+            if (task == null || task.OwnerId != user.Id)
+                return Results.NotFound();
+
+            if (!new[] { "todo", "in_progress", "done" }.Contains(request.Status))
+                return Results.BadRequest("Invalid status");
+
+            task.Status = request.Status;
+            storage.UpdateTask(task);
+            return Results.Ok(task);
+        });
+
+        // DELETE /tasks/{id}
+        group.MapDelete("/{id:int}", async (int id, ITaskStorage storage, HttpContext httpContext) =>
+        {
+            var user = (User)httpContext.Items["User"]!;
+            var task = storage.GetTaskById(id);
+            if (task == null || task.OwnerId != user.Id)
+                return Results.NotFound();
+
+            storage.DeleteTask(id);
+            return Results.NoContent();
+        });
+    }
+
+    public record TaskCreateRequest(string Title, string? Description, string? Status, int? Priority);
+    public record StatusUpdateRequest(string Status);
+}
+</file>
+
+<file path="Endpoints/UserEndpoints.cs">
+using Microsoft.AspNetCore.Http;
+using work5_ASP.NET_Core_API.Dependencies;
+using work5_ASP.NET_Core_API.Models;
+
+namespace work5_ASP.NET_Core_API.Endpoints;
+
+public static class UserEndpoints
+{
+    public static void MapUserEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/users")
+            .WithTags("users")
+            .AddEndpointFilter(async (context, next) =>
+            {
+                var user = AuthHelper.GetCurrentUser(context.HttpContext);
+                if (user == null)
+                    return Results.Unauthorized();
+                context.HttpContext.Items["User"] = user;
+                return await next(context);
+            });
+
+        group.MapGet("/me", (HttpContext httpContext) =>
+        {
+            var user = (User)httpContext.Items["User"]!;
+            return Results.Ok(new { user.Id, user.Role });
+        });
+
+        group.MapGet("/{id:int}", (int id, HttpContext httpContext) =>
+        {
+            var currentUser = (User)httpContext.Items["User"]!;
+            if (currentUser.Role != UserRoles.Admin && currentUser.Id != id)
+                return Results.StatusCode(403); // вместо Forbid()
+            return Results.Ok(new { Id = id, Role = "user" });
+        });
+    }
+}
+</file>
+
+<file path="Endpoints/WebSocketEndpoints.cs">
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
+using work5_ASP.NET_Core_API.Services;
+
+namespace work5_ASP.NET_Core_API.Endpoints;
+
+public static class WebSocketEndpoints
+{
+    public static void MapWebSocketEndpoints(this IEndpointRouteBuilder app)
+    {
+        app.MapGet("/ws/rooms/{roomId}", async (string roomId, string? username, IRoomManager roomManager, HttpContext context) =>
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = 400;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                context.Response.StatusCode = 400;
+                await context.Response.WriteAsync("username required");
+                return;
+            }
+
+            var socket = await context.WebSockets.AcceptWebSocketAsync();
+            await roomManager.Connect(roomId, username, socket);
+
+            try
+            {
+                var buffer = new byte[4096];
+                while (socket.State == WebSocketState.Open)
+                {
+                    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                        break;
+
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                        var message = JsonSerializer.Deserialize<ClientMessage>(json);
+
+                        if (message?.Text?.Length > 300)
+                        {
+                            var error = new { type = "error", detail = "Message is too long" };
+                            var errorJson = JsonSerializer.Serialize(error);
+                            var errorBytes = Encoding.UTF8.GetBytes(errorJson);
+                            await socket.SendAsync(new ArraySegment<byte>(errorBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                            continue;
+                        }
+
+                        var broadcastPayload = new
+                        {
+                            type = "message",
+                            room_id = roomId,
+                            username = username,
+                            text = message?.Text ?? ""
+                        };
+                        await roomManager.Broadcast(roomId, broadcastPayload);
+                    }
+                }
+            }
+            finally
+            {
+                await roomManager.Disconnect(roomId, username, socket);
+                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
+            }
+        });
+
+        app.MapGet("/rooms/{roomId}/users", async (string roomId, IRoomManager roomManager) =>
+        {
+            var users = roomManager.GetUsers(roomId);
+            return Results.Ok(new { room_id = roomId, users });
+        });
+    }
+
+    private class ClientMessage
+    {
+        public string? Type { get; set; }
+        public string? Text { get; set; }
+    }
+}
+</file>
+
+<file path="folder.yml">
+info:
+  name: WebApplication_ASP.NET_Core
+  type: folder
+  seq: 5
+
+request: {}
+</file>
+
+<file path="Models/Enums.cs">
+namespace work5_ASP.NET_Core_API.Models;
+
+public static class TaskStatuses
+{
+    public const string Todo = "todo";
+    public const string InProgress = "in_progress";
+    public const string Done = "done";
+}
+
+public static class UserRoles
+{
+    public const string User = "user";
+    public const string Admin = "admin";
+}
+</file>
+
+<file path="Models/TaskItem.cs">
+namespace work5_ASP.NET_Core_API.Models;
+
+public class TaskItem
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string Status { get; set; } = "todo";
+    public int Priority { get; set; }
+    public int OwnerId { get; set; }
+}
+</file>
+
+<file path="Models/User.cs">
+namespace work5_ASP.NET_Core_API.Models;
+
+public class User
+{
+    public int Id { get; set; }
+    public string Role { get; set; } = "user";
+}
+</file>
+
+<file path="Program.cs">
+using work5_ASP.NET_Core_API.Endpoints;
+using work5_ASP.NET_Core_API.Services;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<ITaskStorage, InMemoryTaskStorage>();
+builder.Services.AddSingleton<IRoomManager, RoomManager>();
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseWebSockets();
+app.UseHttpsRedirection();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.MapHealthEndpoints();
+app.MapTaskEndpoints();
+app.MapUserEndpoints();
+app.MapAdminEndpoints();
+app.MapWebSocketEndpoints();
+
+app.Run();
+
+public partial class Program { }
+</file>
+
+<file path="Properties/launchSettings.json">
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5161",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "https://localhost:7203;http://localhost:5161",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+</file>
+
+<file path="Services/InMemoryTaskStorage.cs">
+using System.Collections.Concurrent;
+using work5_ASP.NET_Core_API.Models;
+
+namespace work5_ASP.NET_Core_API.Services;
+
+public class InMemoryTaskStorage : ITaskStorage
+{
+    private readonly ConcurrentDictionary<int, TaskItem> _tasks = new();
+    private int _nextId = 1;
+
+    public TaskItem? GetTaskById(int id) => _tasks.TryGetValue(id, out var task) ? task : null;
+
+    public IEnumerable<TaskItem> GetAllTasks() => _tasks.Values;
+
+    public TaskItem CreateTask(TaskItem task)
+    {
+        task.Id = _nextId++;
+        _tasks[task.Id] = task;
+        return task;
+    }
+
+    public bool UpdateTask(TaskItem task)
+    {
+        if (!_tasks.ContainsKey(task.Id)) return false;
+        _tasks[task.Id] = task;
+        return true;
+    }
+
+    public bool DeleteTask(int id) => _tasks.TryRemove(id, out _);
+
+    public void Clear() => _tasks.Clear();
+}
+</file>
+
+<file path="Services/IRoomManager.cs">
+using System.Net.WebSockets;
+
+namespace work5_ASP.NET_Core_API.Services;
+
+public interface IRoomManager
+{
+    Task Connect(string roomId, string username, WebSocket socket);
+    Task Disconnect(string roomId, string username, WebSocket socket);
+    Task Broadcast(string roomId, object payload);
+    IEnumerable<string> GetUsers(string roomId);
+    void Clear(); // добавить
+}
+</file>
+
+<file path="Services/ITaskStorage.cs">
+using work5_ASP.NET_Core_API.Models;
+
+namespace work5_ASP.NET_Core_API.Services;
+
+public interface ITaskStorage
+{
+    TaskItem? GetTaskById(int id);
+    IEnumerable<TaskItem> GetAllTasks();
+    TaskItem CreateTask(TaskItem task);
+    bool UpdateTask(TaskItem task);
+    bool DeleteTask(int id);
+    void Clear(); // для тестов
+}
+</file>
+
+<file path="Services/RoomManager.cs">
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
+
+namespace work5_ASP.NET_Core_API.Services;
+
+public class RoomManager : IRoomManager
+{
+    private record struct Connection(string Username, WebSocket Socket);
+    private readonly Dictionary<string, List<Connection>> _rooms = new();
+
+    public async Task Connect(string roomId, string username, WebSocket socket)
+    {
+        lock (_rooms)
+        {
+            if (!_rooms.ContainsKey(roomId))
+                _rooms[roomId] = new List<Connection>();
+            _rooms[roomId].Add(new Connection(username, socket));
+        }
+        await Broadcast(roomId, new { type = "system", message = $"{username} joined the room" });
+    }
+
+    public async Task Disconnect(string roomId, string username, WebSocket socket)
+    {
+        lock (_rooms)
+        {
+            if (_rooms.TryGetValue(roomId, out var connections))
+            {
+                connections.RemoveAll(c => c.Socket == socket);
+                if (connections.Count == 0)
+                    _rooms.Remove(roomId);
+            }
+        }
+        await Broadcast(roomId, new { type = "system", message = $"{username} left the room" });
+    }
+
+    public async Task Broadcast(string roomId, object payload)
+    {
+        List<WebSocket> sockets;
+        lock (_rooms)
+        {
+            if (!_rooms.TryGetValue(roomId, out var connections))
+                return;
+            sockets = connections.Select(c => c.Socket).ToList();
+        }
+
+        var json = JsonSerializer.Serialize(payload);
+        var bytes = Encoding.UTF8.GetBytes(json);
+        var buffer = new ArraySegment<byte>(bytes);
+
+        foreach (var socket in sockets)
+        {
+            if (socket.State == WebSocketState.Open)
+                await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+    }
+
+    public IEnumerable<string> GetUsers(string roomId)
+    {
+        lock (_rooms)
+        {
+            if (_rooms.TryGetValue(roomId, out var connections))
+                return connections.Select(c => c.Username).ToList();
+            return Array.Empty<string>();
+        }
+    }
+
+    public void Clear()
+    {
+        lock (_rooms)
+        {
+            _rooms.Clear();
+        }
+    }
+}
+</file>
+
+<file path="WebApplication_ASP.NET_Core.http">
+
+</file>
+
+<file path="work5_ASP.NET_Core_API.csproj">
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.4" />
+  </ItemGroup>
+
+</Project>
+</file>
+
+</files>

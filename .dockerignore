@@ -1,0 +1,8 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/.venv
+**/__pycache__
+**/.pytest_cache
+README.md
